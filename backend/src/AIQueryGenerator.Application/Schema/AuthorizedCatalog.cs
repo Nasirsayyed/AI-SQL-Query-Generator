@@ -13,6 +13,7 @@ public sealed class CatalogTable
     public required DbObjectType ObjectType { get; init; }
     public string? Description { get; init; }
     public bool IsAllowed { get; init; }
+    public long? RowCountEstimate { get; init; }
 
     /// <summary>All discovered columns keyed case-insensitively (SQL Server default collation semantics).</summary>
     public required IReadOnlyDictionary<string, CatalogColumn> AllColumns { get; init; }

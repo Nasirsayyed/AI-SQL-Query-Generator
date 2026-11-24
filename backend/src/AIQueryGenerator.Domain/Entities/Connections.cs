@@ -7,7 +7,7 @@ namespace AIQueryGenerator.Domain.Entities;
 /// A configured target SQL Server database. Connection strings are always composed server-side from these
 /// discrete fields; arbitrary client-supplied connection strings are never accepted.
 /// </summary>
-public class DatabaseConnection : AuditableEntity
+public class DatabaseConnection : AuditableEntity, ISoftDelete
 {
     public const int DefaultMaxRows = 1000;
 
@@ -32,6 +32,8 @@ public class DatabaseConnection : AuditableEntity
     public string? LastTestMessage { get; set; }
     public DateTime? LastSchemaRefreshAt { get; set; }
     public int? CreatedByUserId { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 
     public ICollection<DatabaseConnectionPermission> Permissions { get; set; } = new List<DatabaseConnectionPermission>();
     public ICollection<AllowedDatabaseObject> AllowedObjects { get; set; } = new List<AllowedDatabaseObject>();
