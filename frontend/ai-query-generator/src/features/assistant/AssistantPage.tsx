@@ -24,10 +24,27 @@ import { useNotify } from '../../components/Notifier';
 import { downloadBlob, safeFileName } from '../../utils/export';
 import { useQueryWorkbench, type WorkbenchSeed } from './useQueryWorkbench';
 import { ExplanationPanel, OptimizationPanel, PlanPanel } from './AnalysisPanels';
+import { ResizeHandle } from '../../components/ResizeHandle';
 import type { ChartConfig } from '../../utils/chart';
 import { EXAMPLE_QUESTIONS } from './exampleQuestions';
 
 const SqlEditor = lazy(() => import('../../components/SqlEditor'));
+
+const EDITOR_HEIGHT_KEY = 'aiqg.editorHeight';
+const EDITOR_DEFAULT_HEIGHT = 280;
+const EDITOR_EXPANDED_HEIGHT = 560;
+const EDITOR_MIN_HEIGHT = 140;
+const EDITOR_MAX_HEIGHT = 1200;
+
+/** Remembered editor height (per browser); falls back to the default when storage is unavailable. */
+function readEditorHeight(): number {
+  try {
+    const v = Number(localStorage.getItem(EDITOR_HEIGHT_KEY));
+    return Number.isFinite(v) && v >= EDITOR_MIN_HEIGHT && v <= EDITOR_MAX_HEIGHT ? v : EDITOR_DEFAULT_HEIGHT;
+  } catch {
+    return EDITOR_DEFAULT_HEIGHT;
+  }
+}
 
 
 
@@ -43,9 +60,19 @@ export function AssistantPage() {
   const wb = useQueryWorkbench(connectionId);
   const [schemaName, setSchemaName] = useState('');
   const [tab, setTab] = useState<ResultTab>('results');
-  const [expanded, setExpanded] = useState(false);
+  const [editorHeight, setEditorHeight] = useState(readEditorHeight);
   const [saveOpen, setSaveOpen] = useState(false);
   const [chartConfig, setChartConfig] = useState<ChartConfig | null>(null);
+
+  const expanded = editorHeight >= EDITOR_EXPANDED_HEIGHT;
+  const resizeEditor = (height: number) => {
+    setEditorHeight(height);
+    try {
+      localStorage.setItem(EDITOR_HEIGHT_KEY, String(height));
+    } catch {
+      /* storage unavailable */
+    }
+  };
 
   const canEdit = hasPermission(Permissions.QueryEditSql);
   const canExecute = hasPermission(Permissions.QueryExecute);
@@ -173,7 +200,7 @@ export function AssistantPage() {
       )}
 
       {(hasSql || canEdit) && (
-        <Card sx={{ mb: 2 }}>
+        <Card sx={{ mb: 0.5 }}>
           <CardContent>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mb: 1.5, alignItems: { md: 'center' } }}>
               <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -184,7 +211,7 @@ export function AssistantPage() {
                 <Tooltip title="Copy SQL"><span><IconButton onClick={() => void copy()} disabled={!hasSql} aria-label="Copy SQL"><Copy size={17} /></IconButton></span></Tooltip>
                 <Tooltip title="Download .sql"><span><IconButton onClick={() => downloadBlob(new Blob([wb.sql], { type: 'text/plain' }), safeFileName(wb.title || 'query', 'sql'))} disabled={!hasSql} aria-label="Download SQL"><Download size={17} /></IconButton></span></Tooltip>
                 {canEdit && <Tooltip title="Reset to generated SQL"><span><IconButton onClick={wb.reset} disabled={!wb.originalSql || wb.sql === wb.originalSql} aria-label="Reset SQL"><RotateCcw size={17} /></IconButton></span></Tooltip>}
-                <Tooltip title={expanded ? 'Shrink editor' : 'Expand editor'}><IconButton onClick={() => setExpanded(!expanded)} aria-label="Toggle editor size">{expanded ? <Minimize2 size={17} /> : <Maximize2 size={17} />}</IconButton></Tooltip>
+                <Tooltip title={expanded ? 'Shrink editor' : 'Expand editor'}><IconButton onClick={() => resizeEditor(expanded ? EDITOR_DEFAULT_HEIGHT : EDITOR_EXPANDED_HEIGHT)} aria-label="Toggle editor size">{expanded ? <Minimize2 size={17} /> : <Maximize2 size={17} />}</IconButton></Tooltip>
               </Stack>
             </Stack>
 
@@ -193,8 +220,8 @@ export function AssistantPage() {
             )}
             {!canEdit && hasSql && <Alert severity="info" sx={{ mb: 1.5 }}>Your role can run AI-generated SQL but cannot edit it.</Alert>}
 
-            <Suspense fallback={<Skeleton variant="rectangular" height={expanded ? 560 : 280} />}>
-              <SqlEditor value={wb.sql} onChange={wb.setSql} readOnly={!canEdit} height={expanded ? 560 : 280} completions={completions} onExecuteShortcut={() => void wb.execute()} />
+            <Suspense fallback={<Skeleton variant="rectangular" height={editorHeight} />}>
+              <SqlEditor value={wb.sql} onChange={wb.setSql} readOnly={!canEdit} height={editorHeight} completions={completions} onExecuteShortcut={() => void wb.execute()} />
             </Suspense>
 
             <Box sx={{ mt: 2 }}>
@@ -230,6 +257,17 @@ export function AssistantPage() {
             <ValidationPanel validation={wb.validation} stale={!!wb.validation && !wb.validationIsCurrent} />
           </CardContent>
         </Card>
+      )}
+
+      {(hasSql || canEdit) && (
+        <ResizeHandle
+          value={editorHeight}
+          min={EDITOR_MIN_HEIGHT}
+          max={EDITOR_MAX_HEIGHT}
+          onChange={resizeEditor}
+          onReset={() => resizeEditor(EDITOR_DEFAULT_HEIGHT)}
+          ariaLabel="Resize SQL editor and results"
+        />
       )}
 
       {(wb.result || wb.explanation || wb.optimization || wb.plan || ['explain', 'optimize', 'plan'].includes(wb.busy ?? '')) && (

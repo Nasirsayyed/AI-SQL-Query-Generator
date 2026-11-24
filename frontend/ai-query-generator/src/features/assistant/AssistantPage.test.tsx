@@ -132,4 +132,17 @@ describe('AssistantPage', () => {
     expect(screen.getByText(/cannot edit it/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /format sql/i })).not.toBeInTheDocument();
   });
+
+  it('has a resizable divider between the editor and results that remembers its size', async () => {
+    localStorage.removeItem('aiqg.editorHeight');
+    renderWithProviders(<AssistantPage />);
+    const divider = screen.getByRole('separator', { name: /resize sql editor and results/i });
+    expect(divider).toHaveAttribute('aria-valuenow', '280');
+    divider.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(divider).toHaveAttribute('aria-valuenow', '304');
+    expect(localStorage.getItem('aiqg.editorHeight')).toBe('304');
+    await userEvent.dblClick(divider);
+    expect(divider).toHaveAttribute('aria-valuenow', '280');
+  });
 });
