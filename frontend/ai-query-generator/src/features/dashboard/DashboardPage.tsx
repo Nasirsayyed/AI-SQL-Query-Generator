@@ -72,7 +72,7 @@ export function DashboardPage() {
   const perfOption = useMemo(() => ({
     tooltip: { trigger: 'axis' },
     legend: { bottom: 0 },
-    grid: { left: 8, right: 16, top: 16, bottom: 40, containLabel: true },
+    grid: { left: 8, right: 16, top: 36, bottom: 40, containLabel: true },
     xAxis: { type: 'category', data: (performance.data?.daily ?? []).map((d) => d.date.slice(5)) },
     yAxis: { type: 'value', name: 'ms' },
     series: [
@@ -107,7 +107,7 @@ export function DashboardPage() {
           { label: 'Queries Generated Today', value: formatNumber(s?.queriesGeneratedToday), icon: <Sparkles size={22} />, color: 'secondary.main' },
           { label: 'Active Connections', value: formatNumber(s?.activeConnections), icon: <Database size={22} />, color: 'info.main' },
         ].map((k) => (
-          <Grid key={k.label} size={{ xs: 12, sm: 6, lg: 2 }}>
+          <Grid key={k.label} size={{ xs: 12, sm: 6, md: 4, xl: 2 }}>
             <KpiCard {...k} loading={summary.isLoading} />
           </Grid>
         ))}

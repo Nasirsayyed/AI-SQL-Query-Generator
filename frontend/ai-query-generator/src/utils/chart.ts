@@ -142,7 +142,11 @@ export function buildChartOption(config: ChartConfig, series: ReturnType<typeof 
     default:
       return {
         ...base,
-        xAxis: { type: 'category', data: series.categories, axisLabel: { rotate: series.categories.length > 12 ? 40 : 0 } },
+        xAxis: {
+          type: 'category',
+          data: series.categories,
+          axisLabel: { interval: series.categories.length <= 40 ? 0 : 'auto', rotate: series.categories.length > 6 ? 35 : 0, width: 120, overflow: 'truncate' },
+        },
         yAxis: { type: 'value', name: yName },
         series: [{
           type: config.chartType === 'bar' ? 'bar' : 'line',

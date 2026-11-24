@@ -29,7 +29,9 @@ export function SchemaExplorerPage() {
 
   // Admins may open inactive connections (e.g. to configure permissions before activation).
   const managed = useQuery({ queryKey: ['connections', 'managed'], queryFn: connectionsApi.managed, enabled: hasPermission(Permissions.ConnectionsManage) });
-  const options = managed.data?.map((c) => ({ id: c.connectionId, name: c.connectionName })) ?? connections.map((c) => ({ id: c.connectionId, name: c.connectionName }));
+  const options = managed.data?.length
+    ? managed.data.map((c) => ({ id: c.connectionId, name: c.connectionName }))
+    : connections.map((c) => ({ id: c.connectionId, name: c.connectionName }));
   const connectionId = Number(params.get('connectionId')) || activeConnection?.connectionId || options[0]?.id || null;
 
   const [filter, setFilter] = useState(params.get('q') ?? '');

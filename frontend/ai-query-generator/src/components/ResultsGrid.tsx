@@ -10,11 +10,15 @@ import { useNotify } from './Notifier';
 
 const ROW_NUMBER_FIELD = '__row';
 
+const FRACTIONAL = /^(decimal|numeric|money|smallmoney|float|real)$/i;
+
 function display(value: CellValue, dataType: string): string {
   if (value === null) return 'NULL';
   if (typeof value === 'boolean') return value ? 'true' : 'false';
   if (typeof value === 'string' && /^datetime/i.test(dataType)) return value.replace('T', ' ').replace(/\.0+$/, '');
-  if (typeof value === 'number' && !Number.isInteger(value)) return value.toLocaleString(undefined, { maximumFractionDigits: 6 });
+  // Measures get grouping separators; integer columns (often ids or years) are shown as-is.
+  if (typeof value === 'number' && (FRACTIONAL.test(dataType) || !Number.isInteger(value)))
+    return value.toLocaleString(undefined, { maximumFractionDigits: 6 });
   return String(value);
 }
 
