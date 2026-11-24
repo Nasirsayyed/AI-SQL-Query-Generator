@@ -1,13 +1,13 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderWithProviders, mockAuth, sampleResult } from '../../test/utils';
+import { renderWithProviders, mockAuth, sampleResult, allPermissions } from '../../test/utils';
 import { HistoryPage } from './HistoryPage';
 import { historyApi } from '../../api/endpoints';
 
-vi.mock('../../auth/AuthContext', () => ({ useAuth: () => mockAuth() }));
+const auth = { current: mockAuth() };
+vi.mock('../../auth/AuthContext', () => ({ useAuth: () => auth.current }));
 vi.mock('../../api/endpoints', () => ({
-  historyApi: { list: vi.fn(), get: vi.fn(), remove: vi.fn(), rerun: vi.fn() },
-  usersApi: { list: vi.fn() },
+  historyApi: { list: vi.fn(), get: vi.fn(), remove: vi.fn(), rerun: vi.fn(), users: vi.fn() },
 }));
 
 const item = {
@@ -19,6 +19,7 @@ const item = {
 describe('HistoryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    auth.current = mockAuth();
     vi.mocked(historyApi.list).mockResolvedValue({ items: [item], page: 1, pageSize: 25, totalCount: 1, totalPages: 1 });
   });
 
@@ -44,5 +45,21 @@ describe('HistoryPage', () => {
     await userEvent.click(await screen.findByText('Monthly revenue'));
     expect(await screen.findByText('SELECT 42 AS Answer')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /open in assistant/i })).toBeInTheDocument();
+  });
+
+  it('lets users who can see all history filter by user', async () => {
+    auth.current = mockAuth([...allPermissions, 'history.view_all']);
+    vi.mocked(historyApi.users).mockResolvedValue([{ userId: 1, fullName: 'Dev User' }, { userId: 2, fullName: 'Ana Lyst' }]);
+    renderWithProviders(<HistoryPage />);
+    await userEvent.click(await screen.findByRole('combobox', { name: 'User' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Ana Lyst' }));
+    await waitFor(() => expect(historyApi.list).toHaveBeenLastCalledWith(expect.objectContaining({ userId: 2 })));
+  });
+
+  it('does not offer the user filter without history.view_all', async () => {
+    renderWithProviders(<HistoryPage />);
+    await screen.findByText('Monthly revenue');
+    expect(screen.queryByRole('combobox', { name: 'User' })).not.toBeInTheDocument();
+    expect(historyApi.users).not.toHaveBeenCalled();
   });
 });

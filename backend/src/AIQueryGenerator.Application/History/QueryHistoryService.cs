@@ -13,6 +13,7 @@ namespace AIQueryGenerator.Application.History;
 public interface IQueryHistoryService
 {
     Task<PagedResult<QueryHistoryItemDto>> ListAsync(QueryHistoryQuery query, CancellationToken ct);
+    Task<IReadOnlyList<HistoryUserDto>> ListUsersAsync(CancellationToken ct);
     Task<QueryHistoryDetailDto> GetAsync(long id, CancellationToken ct);
     Task DeleteAsync(long id, CancellationToken ct);
     Task<QueryResultDto> RerunAsync(long id, RerunQueryRequest request, CancellationToken ct);
@@ -55,6 +56,15 @@ public sealed class QueryHistoryService(
         var total = await q.CountAsync(ct);
         var items = await q.Skip(query.Skip).Take(query.PageSize).Select(Projection).ToListAsync(ct);
         return new PagedResult<QueryHistoryItemDto>(items, query.Page, query.PageSize, total);
+    }
+
+    /// <summary>Users with history records. Only names and ids; requires history.view_all.</summary>
+    public async Task<IReadOnlyList<HistoryUserDto>> ListUsersAsync(CancellationToken ct)
+    {
+        if (!CanViewAll) throw new ForbiddenException();
+        var ids = db.QueryHistory.Where(h => !h.IsDeleted).Select(h => h.UserId).Distinct();
+        return await db.Users.AsNoTracking().Where(u => ids.Contains(u.UserId)).OrderBy(u => u.FullName)
+            .Select(u => new HistoryUserDto(u.UserId, u.FullName)).ToListAsync(ct);
     }
 
     public async Task<QueryHistoryDetailDto> GetAsync(long id, CancellationToken ct)

@@ -43,6 +43,7 @@ export function useQueryWorkbench(connectionId: number | null) {
   const [busy, setBusy] = useState<null | 'generate' | 'validate' | 'execute' | 'format' | 'explain' | 'optimize' | 'plan'>(null);
   const [error, setError] = useState<unknown>(null);
   const [controller, setController] = useState<AbortController | null>(null);
+  const [pendingFormat, setPendingFormat] = useState<{ sql: string; commentsRemoved: number; original: string } | null>(null);
 
   const signature = useMemo(() => parameterSignature(parameters), [parameters]);
   const validationIsCurrent = !!validation && validation.sql === sql && validation.signature === signature;
@@ -136,10 +137,25 @@ export function useQueryWorkbench(connectionId: number | null) {
 
   const cancel = useCallback(() => controller?.abort(), [controller]);
 
+  /**
+   * Formats via the backend. Formatting regenerates SQL from its syntax tree, which drops comments, so when the SQL has
+   * comments the result is held in `pendingFormat` until the user confirms or discards it.
+   */
   const format = useCallback(async () => {
-    const response = await run('format', () => sqlApi.format(sql));
-    if (response) setSql(response.sql);
+    const original = sql;
+    const response = await run('format', () => sqlApi.format(original));
+    if (!response) return;
+    if (response.commentsRemoved > 0) setPendingFormat({ sql: response.sql, commentsRemoved: response.commentsRemoved, original });
+    else setSql(response.sql);
   }, [sql, run, setSql]);
+
+  const confirmFormat = useCallback(() => {
+    // Ignore the pending result if the SQL changed while the dialog was open.
+    if (pendingFormat && pendingFormat.original === sql) setSql(pendingFormat.sql);
+    setPendingFormat(null);
+  }, [pendingFormat, sql, setSql]);
+
+  const discardFormat = useCallback(() => setPendingFormat(null), []);
 
   const explain = useCallback(async () => {
     if (!connectionId) return;
@@ -164,6 +180,6 @@ export function useQueryWorkbench(connectionId: number | null) {
   return {
     question, setQuestion, generation, sql, setSql, originalSql, parameters, setParameters, title, setTitle, historyId,
     validation: validation?.response ?? null, validationIsCurrent, canExecute, result, chartSuggestion, explanation, optimization, plan,
-    busy, error, setError, generate, validate, execute, cancel, format, explain, optimize, explainPlan, reset, load,
+    busy, error, setError, generate, validate, execute, cancel, format, pendingFormat, confirmFormat, discardFormat, explain, optimize, explainPlan, reset, load,
   };
 }

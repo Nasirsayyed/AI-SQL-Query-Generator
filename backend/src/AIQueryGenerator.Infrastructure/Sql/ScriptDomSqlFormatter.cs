@@ -4,10 +4,10 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 
 namespace AIQueryGenerator.Infrastructure.Sql;
 
-/// <summary>Formats T-SQL by regenerating it from the parsed syntax tree (comments are not preserved).</summary>
+/// <summary>Formats T-SQL by regenerating it from the parsed syntax tree. Comments are not preserved and are counted.</summary>
 public sealed class ScriptDomSqlFormatter : ISqlFormatter
 {
-    public string Format(string sql)
+    public SqlFormatResult Format(string sql)
     {
         var parser = new TSql160Parser(initialQuotedIdentifiers: true);
         using var reader = new StringReader(sql);
@@ -31,6 +31,7 @@ public sealed class ScriptDomSqlFormatter : ISqlFormatter
             MultilineWherePredicatesList = true,
         });
         generator.GenerateScript(fragment, out var formatted);
-        return formatted.Trim();
+        var comments = fragment.ScriptTokenStream.Count(t => t.TokenType is TSqlTokenType.SingleLineComment or TSqlTokenType.MultilineComment);
+        return new SqlFormatResult(formatted.Trim(), comments);
     }
 }

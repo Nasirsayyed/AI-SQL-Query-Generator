@@ -368,4 +368,18 @@ public class QueryWorkflowTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Contains("connection.tested", actions);
         Assert.DoesNotContain("S3cret-password!", logs.Data.GetRawText());
     }
+
+    [Fact]
+    public async Task History_user_filter_list_requires_view_all()
+    {
+        var scenario = await Scenario.CreateAsync(factory);
+        var dev = await scenario.LoginAsAsync("Developer");
+        const string sql = "SELECT p.ProductName FROM dbo.Products p";
+        var token = (await (await dev.PostJsonAsync("/api/sql/validate", new { connectionId = scenario.ConnectionId, sql })).ReadApiAsync()).Data.GetProperty("validationToken").GetString();
+        await dev.PostJsonAsync("/api/sql/execute", new { connectionId = scenario.ConnectionId, sql, parameters = Array.Empty<object>(), validationToken = token });
+
+        var users = await (await scenario.Admin.GetAsync("/api/query-history/users")).ReadApiAsync();
+        Assert.Contains(users.Data.EnumerateArray(), u => u.GetProperty("fullName").GetString() == "Developer User");
+        Assert.Equal(HttpStatusCode.Forbidden, (await dev.GetAsync("/api/query-history/users")).StatusCode);
+    }
 }

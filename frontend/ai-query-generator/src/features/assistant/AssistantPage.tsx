@@ -21,6 +21,7 @@ import { ResultChart } from '../../components/ResultChart';
 import { ExecutionInfo } from '../../components/ExecutionInfo';
 import { SaveQueryDialog, type SaveQueryValues } from '../../components/SaveQueryDialog';
 import { useNotify } from '../../components/Notifier';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { downloadBlob, safeFileName } from '../../utils/export';
 import { useQueryWorkbench, type WorkbenchSeed } from './useQueryWorkbench';
 import { ExplanationPanel, OptimizationPanel, PlanPanel } from './AnalysisPanels';
@@ -293,6 +294,15 @@ export function AssistantPage() {
           </CardContent>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={!!wb.pendingFormat}
+        title="Formatting removes comments"
+        message={`The formatter rebuilds the SQL from its syntax tree and will remove ${wb.pendingFormat?.commentsRemoved ?? 0} comment${wb.pendingFormat?.commentsRemoved === 1 ? '' : 's'}. Format anyway?`}
+        confirmLabel="Format and remove comments"
+        onConfirm={wb.confirmFormat}
+        onClose={wb.discardFormat}
+      />
 
       <SaveQueryDialog
         open={saveOpen}

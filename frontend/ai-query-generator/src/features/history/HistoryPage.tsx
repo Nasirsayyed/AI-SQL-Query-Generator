@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { DataGrid, type GridColDef, type GridPaginationModel, type GridSortModel } from '@mui/x-data-grid';
 import { Copy, ExternalLink, Play, Trash2, X } from 'lucide-react';
-import { historyApi, usersApi } from '../../api/endpoints';
+import { historyApi } from '../../api/endpoints';
 import type { QueryHistoryItem, QueryResult } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
 import { Permissions } from '../../auth/permissions';
@@ -48,7 +48,7 @@ export function HistoryPage() {
     }),
     placeholderData: (prev) => prev,
   });
-  const users = useQuery({ queryKey: ['users', 'all'], queryFn: () => usersApi.list({ page: 1, pageSize: 200 }), enabled: viewAll && hasPermission(Permissions.UsersManage) });
+  const users = useQuery({ queryKey: ['history', 'users'], queryFn: historyApi.users, enabled: viewAll });
   const detail = useQuery({ queryKey: ['history', 'detail', selected], queryFn: () => historyApi.get(selected!), enabled: selected !== null });
 
   const remove = useMutation({
@@ -112,7 +112,7 @@ export function HistoryPage() {
           {viewAll && users.data && (
             <TextField select label="User" value={userId} onChange={(e) => setUserId(e.target.value === '' ? '' : Number(e.target.value))} sx={{ minWidth: 180 }}>
               <MenuItem value="">All users</MenuItem>
-              {users.data.items.map((u) => <MenuItem key={u.userId} value={u.userId}>{u.fullName}</MenuItem>)}
+              {users.data.map((u) => <MenuItem key={u.userId} value={u.userId}>{u.fullName}</MenuItem>)}
             </TextField>
           )}
         </Stack>

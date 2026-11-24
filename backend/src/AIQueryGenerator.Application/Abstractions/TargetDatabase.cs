@@ -40,10 +40,15 @@ public interface ISqlValidator
     SqlValidationResult Validate(string sql, SqlValidationContext context);
 }
 
+public sealed record SqlFormatResult(string Sql, int CommentsRemoved);
+
 public interface ISqlFormatter
 {
-    /// <summary>Re-generates the SQL text from its syntax tree. Throws when the SQL cannot be parsed.</summary>
-    string Format(string sql);
+    /// <summary>
+    /// Re-generates the SQL text from its syntax tree. Comments cannot be preserved; the number of comments that the
+    /// formatted text drops is reported so callers can confirm first. Throws when the SQL cannot be parsed.
+    /// </summary>
+    SqlFormatResult Format(string sql);
 }
 
 /// <summary>Summarises an estimated execution plan XML document.</summary>

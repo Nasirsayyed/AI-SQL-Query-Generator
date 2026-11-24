@@ -45,7 +45,8 @@ public sealed record QueryResultDto(
 
 public sealed record FormatSqlRequest(string Sql);
 
-public sealed record FormatSqlResponse(string Sql);
+/// <summary>Formatted SQL. CommentsRemoved &gt; 0 means applying it would drop that many comments.</summary>
+public sealed record FormatSqlResponse(string Sql, int CommentsRemoved);
 
 public sealed record ExplainPlanRequest(int ConnectionId, string Sql, IReadOnlyList<QueryParameterDto>? Parameters = null);
 

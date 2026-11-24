@@ -17,6 +17,12 @@ public sealed class QueryHistoryController(IQueryHistoryService history) : ApiCo
     public async Task<ActionResult<ApiResponse<PagedResult<QueryHistoryItemDto>>>> List([FromQuery] QueryHistoryQuery query, CancellationToken ct) =>
         Success(await history.ListAsync(query, ct));
 
+    /// <summary>Users that appear in history, for filtering (requires history.view_all).</summary>
+    [HttpGet("users")]
+    [HasPermission(Permissions.HistoryViewAll)]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<HistoryUserDto>>>> Users(CancellationToken ct) =>
+        Success(await history.ListUsersAsync(ct));
+
     [HttpGet("{id:long}")]
     public async Task<ActionResult<ApiResponse<QueryHistoryDetailDto>>> Get(long id, CancellationToken ct) => Success(await history.GetAsync(id, ct));
 

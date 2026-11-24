@@ -74,4 +74,39 @@ describe('useQueryWorkbench', () => {
     expect(result.current.error).toBeInstanceOf(Error);
     expect(result.current.busy).toBeNull();
   });
+
+  it('applies formatting directly when no comments would be lost', async () => {
+    vi.mocked(sqlApi.format).mockResolvedValue({ sql: 'SELECT\n    1', commentsRemoved: 0 });
+    const { result } = renderHook(() => useQueryWorkbench(1));
+    act(() => result.current.setSql('select 1'));
+    await act(() => result.current.format());
+    expect(result.current.sql).toBe('SELECT\n    1');
+    expect(result.current.pendingFormat).toBeNull();
+  });
+
+  it('asks before formatting SQL that contains comments', async () => {
+    vi.mocked(sqlApi.format).mockResolvedValue({ sql: 'SELECT\n    1', commentsRemoved: 1 });
+    const { result } = renderHook(() => useQueryWorkbench(1));
+    act(() => result.current.setSql('select 1 -- note'));
+    await act(() => result.current.format());
+    expect(result.current.sql).toBe('select 1 -- note');
+    expect(result.current.pendingFormat?.commentsRemoved).toBe(1);
+
+    act(() => result.current.discardFormat());
+    expect(result.current.sql).toBe('select 1 -- note');
+
+    await act(() => result.current.format());
+    act(() => result.current.confirmFormat());
+    expect(result.current.sql).toBe('SELECT\n    1');
+  });
+
+  it('drops a pending format if the SQL changed meanwhile', async () => {
+    vi.mocked(sqlApi.format).mockResolvedValue({ sql: 'SELECT\n    1', commentsRemoved: 1 });
+    const { result } = renderHook(() => useQueryWorkbench(1));
+    act(() => result.current.setSql('select 1 -- note'));
+    await act(() => result.current.format());
+    act(() => result.current.setSql('select 2 -- edited'));
+    act(() => result.current.confirmFormat());
+    expect(result.current.sql).toBe('select 2 -- edited');
+  });
 });

@@ -43,3 +43,6 @@ public sealed record QueryHistoryDetailDto(
     bool IsOwner);
 
 public sealed record RerunQueryRequest(IReadOnlyList<QueryParameterDto>? Parameters = null);
+
+/// <summary>A user who appears in query history (for the history user filter).</summary>
+public sealed record HistoryUserDto(int UserId, string FullName);

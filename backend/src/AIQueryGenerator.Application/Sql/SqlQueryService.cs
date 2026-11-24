@@ -80,7 +80,11 @@ public sealed class SqlQueryService(
         }, ct);
     }
 
-    public FormatSqlResponse Format(FormatSqlRequest request) => new(formatter.Format(request.Sql));
+    public FormatSqlResponse Format(FormatSqlRequest request)
+    {
+        var result = formatter.Format(request.Sql);
+        return new FormatSqlResponse(result.Sql, result.CommentsRemoved);
+    }
 
     public async Task<ExplainPlanResponse> ExplainPlanAsync(ExplainPlanRequest request, CancellationToken ct)
     {

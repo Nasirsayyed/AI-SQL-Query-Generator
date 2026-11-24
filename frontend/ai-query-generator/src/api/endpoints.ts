@@ -52,7 +52,7 @@ export const sqlApi = {
     body: { connectionId: number; sql: string; parameters: T.QueryParameter[]; validationToken?: string | null; queryHistoryId?: number | null; queryTitle?: string | null },
     signal?: AbortSignal,
   ) => api.post<T.QueryResult>('/api/sql/execute', body, signal),
-  format: (sql: string) => api.post<{ sql: string }>('/api/sql/format', { sql }),
+  format: (sql: string) => api.post<{ sql: string; commentsRemoved: number }>('/api/sql/format', { sql }),
   explainPlan: (connectionId: number, sql: string, parameters: T.QueryParameter[]) =>
     api.post<{ summary: T.ExecutionPlanSummary; planXml?: string | null }>('/api/sql/explain-plan', { connectionId, sql, parameters }),
 };
@@ -72,6 +72,7 @@ export interface HistoryFilter {
 
 export const historyApi = {
   list: (filter: HistoryFilter) => api.get<T.PagedResult<T.QueryHistoryItem>>('/api/query-history', filter),
+  users: () => api.get<{ userId: number; fullName: string }[]>('/api/query-history/users'),
   get: (id: number) => api.get<T.QueryHistoryDetail>(`/api/query-history/${id}`),
   remove: (id: number) => api.delete<object>(`/api/query-history/${id}`),
   rerun: (id: number, parameters?: T.QueryParameter[]) => api.post<T.QueryResult>(`/api/query-history/${id}/rerun`, { parameters: parameters ?? null }),
