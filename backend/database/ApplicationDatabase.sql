@@ -1,4 +1,18 @@
-﻿IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+/*
+    AI SQL Query Generator — APPLICATION database (users, roles, connections, metadata cache, history, audit).
+    This is NOT the target business database; see SampleTargetDatabase.sql for the demo target.
+
+    Generated from the EF Core migrations with:
+        dotnet ef migrations script --idempotent -p src/AIQueryGenerator.Infrastructure -o database/ApplicationDatabase.sql
+    The script is idempotent and safe to re-run. Roles, permissions and the first Super Admin are seeded by the API at
+    start-up (Seed__SuperAdmin__Email / Seed__SuperAdmin__Password) so no credentials appear in this file.
+
+    Usage:
+        sqlcmd -S <server> -d master -C -Q "IF DB_ID('AIQueryGeneratorApp') IS NULL CREATE DATABASE AIQueryGeneratorApp"
+        sqlcmd -S <server> -d AIQueryGeneratorApp -C -i ApplicationDatabase.sql
+*/
+
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
 BEGIN
     CREATE TABLE [__EFMigrationsHistory] (
         [MigrationId] nvarchar(150) NOT NULL,
