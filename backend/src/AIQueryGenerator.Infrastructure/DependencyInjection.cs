@@ -44,6 +44,8 @@ public static class DependencyInjection
         var keysPath = configuration["DataProtection:KeysPath"];
         if (!string.IsNullOrWhiteSpace(keysPath)) dp.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
         if (OperatingSystem.IsWindows() && configuration.GetValue<bool>("DataProtection:ProtectWithDpapi")) dp.ProtectKeysWithDpapi();
+        // Azure Blob key storage / Key Vault key wrapping (web farms, Azure App Service) when configured.
+        Azure.AzureIntegration.ConfigureDataProtection(dp, configuration);
 
         services.AddSingleton<IPasswordHasher, PasswordHasherService>();
         services.AddSingleton<ITokenService, JwtTokenService>();

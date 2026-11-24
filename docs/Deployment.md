@@ -44,6 +44,11 @@ environment variables, or through a secret manager (for example the Azure Key Va
 | `Seed__SuperAdmin__Email`, `Seed__SuperAdmin__Password` | first start | Creates the first Super Admin when no users exist; remove afterwards |
 | `DataProtection__KeysPath` | yes (non-dev) | Folder for the Data Protection key ring, outside the web root, persistent and backed up |
 | `DataProtection__ProtectWithDpapi` | Windows | `true` encrypts the key ring with DPAPI (machine/app-pool identity) |
+| `DataProtection__AzureBlobUri` | Azure / web farm | Blob URI (`https://<account>.blob.core.windows.net/<container>/aiqg-keys.xml`) storing the key ring for every instance |
+| `DataProtection__KeyVaultKeyId` | Azure | Key Vault key id (`https://<vault>.vault.azure.net/keys/<name>`) that wraps the key ring |
+| `KeyVault__Uri` | Azure | Loads secrets from Azure Key Vault into configuration (see below) |
+| `KeyVault__ReloadMinutes` | no | Periodically reload Key Vault secrets (0 = load once at start-up) |
+| `Azure__ManagedIdentityClientId` | optional | User-assigned managed identity client id; otherwise `DefaultAzureCredential` is used |
 | `Cors__AllowedOrigins__0` | cross-origin only | SPA origin |
 | `Auth__RefreshCookieSameSite` | cross-origin only | `None` when the SPA is on a different site |
 | `ForwardedHeaders__KnownProxies__0` | behind a proxy | Reverse proxy IP so client IPs and HTTPS are trusted |
@@ -54,9 +59,28 @@ Frontend build variables (public, never secret): `VITE_API_BASE_URL` (empty mean
 (`/` or `/subdir/`).
 
 > **The Data Protection key ring is critical.** It decrypts stored target passwords, AI keys and query parameters. Losing
-> it makes them unreadable (re-enter the passwords). In a web farm, every instance must share the same key ring, for
-> example on a file share or with `PersistKeysToAzureBlobStorage` plus `ProtectKeysWithAzureKeyVault` (add those packages
-> in `Infrastructure/DependencyInjection.cs`).
+> it makes them unreadable (re-enter the passwords). In a web farm, every instance must share the same key ring: use a
+> file share (`DataProtection__KeysPath`) or Azure (`DataProtection__AzureBlobUri` plus `DataProtection__KeyVaultKeyId`).
+
+## Azure Key Vault (optional)
+
+Set `KeyVault__Uri` and grant the API's identity (managed identity, or whatever `DefaultAzureCredential` resolves to)
+the **Key Vault Secrets User** role. Secret names map to configuration keys like this:
+
+| Key Vault secret name | Configuration key |
+|---|---|
+| `Jwt--SigningKey` | `Jwt:SigningKey` |
+| `ConnectionStrings--ApplicationDb` | `ConnectionStrings:ApplicationDb` |
+| `Seed--SuperAdmin--Password` | `Seed:SuperAdmin:Password` |
+| `OPENAI-API-KEY`, `AZURE-OPENAI-API-KEY` | `OPENAI_API_KEY`, `AZURE_OPENAI_API_KEY` |
+| `AIQG-SECRET-SALES-DB` | `AIQG_SECRET_SALES_DB`, so a connection password can be `env:AIQG_SECRET_SALES_DB` |
+
+Disabled secrets are ignored. For the key ring, create a blob container and a Key Vault RSA key, and grant the identity
+**Storage Blob Data Contributor** on the container and **Key Vault Crypto User** on the key. Then set
+`DataProtection__AzureBlobUri` and `DataProtection__KeyVaultKeyId`. Leave `DataProtection__KeysPath` empty when using the blob.
+
+These integrations are covered by unit tests for name mapping and wiring, but have not been exercised against a real
+Azure subscription.
 
 ## Database setup
 

@@ -30,6 +30,9 @@ builder.Host.UseSerilog((context, services, logger) => logger
 
 var configuration = builder.Configuration;
 
+// Optional: load secrets (Jwt--SigningKey, ConnectionStrings--ApplicationDb, AIQG-SECRET-*, OPENAI-API-KEY) from Azure Key Vault.
+AIQueryGenerator.Infrastructure.Azure.AzureIntegration.AddKeyVaultIfConfigured(configuration, configuration);
+
 // ----- Request limits -----
 var maxBodyBytes = configuration.GetValue<long?>("Limits:MaxRequestBodyBytes") ?? 1_048_576;
 builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = maxBodyBytes);

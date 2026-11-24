@@ -96,7 +96,8 @@ re-validated against current permissions.
 ## Secrets
 
 - Target passwords and AI keys are stored only as **references**: `dp:<payload>` (ASP.NET Core Data Protection, keys
-  outside the DB and protectable with DPAPI, certificates or Azure Key Vault) or `env:NAME`. `env:` references are limited
+  outside the DB; protected with DPAPI, or stored in Azure Blob Storage and wrapped with an Azure Key Vault key) or
+  `env:NAME` (environment, configuration, or Azure Key Vault through the configuration provider). `env:` references are limited
   to configured prefixes (`AIQG_SECRET_*`, `OPENAI_API_KEY`, `AZURE_OPENAI_API_KEY`) so a connection cannot be pointed at an
   arbitrary server to exfiltrate, say, the JWT key.
 - Stored query parameters are encrypted with Data Protection.

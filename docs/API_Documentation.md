@@ -150,7 +150,7 @@ Paged endpoints accept `page`, `pageSize` (1–200), `search`, `sortBy`, `sortDi
 |---|---|---|---|
 | POST | `/api/sql/validate` | `query.execute` | `{ connectionId, sql, parameters[] }` → `{ isValid, message, errors[{code, message, line, column}], warnings[], referencedObjects[], referencedParameters[], validationToken }` |
 | POST | `/api/sql/execute` | `query.execute` (rate limited) | `{ connectionId, sql, parameters[], validationToken, queryHistoryId?, queryTitle? }` → `QueryResult`. Re-validates; users without `query.edit_sql` may only run SQL identical to their AI generation |
-| POST | `/api/sql/format` | `query.generate` | `{ sql }` → `{ sql }` (regenerated from the AST; comments dropped) |
+| POST | `/api/sql/format` | `query.generate` | `{ sql }` → `{ sql, commentsRemoved }`. Regenerated from the AST, so comments are dropped; the UI asks for confirmation when `commentsRemoved > 0` |
 | POST | `/api/sql/explain-plan` | `query.edit_sql` | Estimated plan via `SET SHOWPLAN_XML ON` (not executed) → `{ summary{estimatedTotalCost, estimatedRows, topOperators[], warnings[], missingIndexes[]}, planXml }` |
 
 Parameters: `{ name, type: String|Int|BigInt|Decimal|Bool|Date|DateTime|Guid, value: string|null }`. Values are parsed
@@ -182,6 +182,7 @@ to `Execution:MaxCellLength`.
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/api/query-history?search&from&to&userId&connectionId&status&page&pageSize&sortBy&sortDirection` | Own records; all users with `history.view_all` |
+| GET | `/api/query-history/users` | Users present in history, for the user filter (`history.view_all`) |
 | GET | `/api/query-history/{id}` | Detail; decrypted parameters for the owner only |
 | DELETE | `/api/query-history/{id}` | `history.delete`; soft delete, erases stored parameters |
 | POST | `/api/query-history/{id}/rerun` | `query.execute`; owner only; fresh authorisation and validation. Body `{ parameters? }` |
